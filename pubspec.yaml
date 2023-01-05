@@ -39,6 +39,11 @@ dependencies:
   jiffy: ^5.0.0
   intl: ^0.17.0
   json_annotation: ^4.7.0
+  draggable_home: ^1.0.4
+  percent_indicator: ^4.2.2
+  carousel_slider: ^4.2.1
+  settings_ui: ^2.0.2
+  flex_color_scheme: ^5.0.0
 
 dev_dependencies:
   flutter_test:

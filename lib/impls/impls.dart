@@ -170,6 +170,28 @@ class TimeTable {
   }
 }
 
+class Utils {
+  static double timeOfDayAsDouble(TimeOfDay tod) {
+    return tod.hour + tod.minute / 60.0;
+  }
+
+  static double percentage(TimeOfDay timeOfDay, TimeOfDay from, TimeOfDay to) {
+    return (Timing.timeOfDayAsDouble(timeOfDay) -
+            Timing.timeOfDayAsDouble(from)) /
+        (Timing.timeOfDayAsDouble(to) - Timing.timeOfDayAsDouble(from));
+  }
+
+  static void sortPeriods(List<Period> periods) {
+    periods.sort((a, b) => Timing.timeOfDayAsDouble(a.timing.from)
+        .compareTo(Timing.timeOfDayAsDouble(b.timing.from)));
+  }
+
+  static DateTime timeOfDayToDateTime(DateTime dateTime, TimeOfDay timeOfDay) {
+    return DateTime(dateTime.year, dateTime.month, dateTime.day, timeOfDay.hour,
+        timeOfDay.minute);
+  }
+}
+
 TimeTable timeTableSample() {
   var subjects = [
     Subject("English"),
@@ -200,12 +222,13 @@ TimeTable timeTableSample() {
     // days
     sunday: [],
     monday: [Period(subjects[0], timings[0])],
-    tuesday: [
-      Period(Subject("English"), Timing.fromString("1:14 PM-2:00 PM")),
-      Period(Subject("Math"), Timing.fromString("2:00 PM-3:00 PM")),
-    ],
+    tuesday: [],
     wednesday: [],
-    thursday: [],
+    thursday: [
+      Period(Subject("Python"), Timing.fromString("9:00 AM-10:00 AM")),
+      Period(Subject("C programming"), Timing.fromString("10:00 AM-11:00 AM")),
+      Period(Subject("English"), Timing.fromString("11:10 AM-11:30 AM")),
+    ],
     friday: [],
     saturday: [],
   );
