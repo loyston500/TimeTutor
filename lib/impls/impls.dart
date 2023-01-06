@@ -82,8 +82,8 @@ class Period {
 
   Period(this.subject, this.timing);
 
-  factory Period.fromJson(Map<String, dynamic> json) =>
-      Period(json["subject"] as Subject, json["timing"] as Timing);
+  factory Period.fromJson(Map<String, dynamic> json) => Period(
+      Subject.fromJson(json["subject"]), Timing.fromJson(json["timing"]));
 
   Map<String, dynamic> toJson() =>
       {"subject": subject.toJson(), "timing": timing.toJson()};
@@ -101,9 +101,6 @@ class Period {
 
 @JsonSerializable()
 class TimeTable {
-  List<Subject> subjects;
-  List<Timing> timings;
-
   List<Period> sunday;
   List<Period> monday;
   List<Period> tuesday;
@@ -113,8 +110,6 @@ class TimeTable {
   List<Period> saturday;
 
   TimeTable({
-    required this.subjects,
-    required this.timings,
     required this.sunday,
     required this.monday,
     required this.tuesday,
@@ -125,20 +120,33 @@ class TimeTable {
   });
 
   factory TimeTable.fromJson(Map<String, dynamic> json) => TimeTable(
-        timings: (json["timings"] as List).map((e) => e as Timing).toList(),
-        subjects: (json["subjects"] as List).map((e) => e as Subject).toList(),
-        sunday: (json["sunday"] as List).map((e) => e as Period).toList(),
-        monday: (json["monday"] as List).map((e) => e as Period).toList(),
-        tuesday: (json["tuesday"] as List).map((e) => e as Period).toList(),
-        wednesday: (json["wednesday"] as List).map((e) => e as Period).toList(),
-        thursday: (json["thursday"] as List).map((e) => e as Period).toList(),
-        friday: (json["friday"] as List).map((e) => e as Period).toList(),
-        saturday: (json["saturday"] as List).map((e) => e as Period).toList(),
+        sunday:
+            (json["sunday"] as List).map((e) => Period.fromJson(e)).toList(),
+        monday:
+            (json["monday"] as List).map((e) => Period.fromJson(e)).toList(),
+        tuesday:
+            (json["tuesday"] as List).map((e) => Period.fromJson(e)).toList(),
+        wednesday:
+            (json["wednesday"] as List).map((e) => Period.fromJson(e)).toList(),
+        thursday:
+            (json["thursday"] as List).map((e) => Period.fromJson(e)).toList(),
+        friday:
+            (json["friday"] as List).map((e) => Period.fromJson(e)).toList(),
+        saturday:
+            (json["saturday"] as List).map((e) => Period.fromJson(e)).toList(),
+      );
+
+  factory TimeTable.blank() => TimeTable(
+        sunday: [],
+        monday: [],
+        tuesday: [],
+        wednesday: [],
+        thursday: [],
+        friday: [],
+        saturday: [],
       );
 
   Map<String, dynamic> toJson() => {
-        "subjects": subjects.map((e) => e.toJson()).toList(),
-        "timings": timings.map((e) => e.toJson()).toList(),
         "sunday": sunday.map((e) => e.toJson()).toList(),
         "monday": monday.map((e) => e.toJson()).toList(),
         "tuesday": tuesday.map((e) => e.toJson()).toList(),
@@ -170,28 +178,6 @@ class TimeTable {
   }
 }
 
-class Utils {
-  static double timeOfDayAsDouble(TimeOfDay tod) {
-    return tod.hour + tod.minute / 60.0;
-  }
-
-  static double percentage(TimeOfDay timeOfDay, TimeOfDay from, TimeOfDay to) {
-    return (Timing.timeOfDayAsDouble(timeOfDay) -
-            Timing.timeOfDayAsDouble(from)) /
-        (Timing.timeOfDayAsDouble(to) - Timing.timeOfDayAsDouble(from));
-  }
-
-  static void sortPeriods(List<Period> periods) {
-    periods.sort((a, b) => Timing.timeOfDayAsDouble(a.timing.from)
-        .compareTo(Timing.timeOfDayAsDouble(b.timing.from)));
-  }
-
-  static DateTime timeOfDayToDateTime(DateTime dateTime, TimeOfDay timeOfDay) {
-    return DateTime(dateTime.year, dateTime.month, dateTime.day, timeOfDay.hour,
-        timeOfDay.minute);
-  }
-}
-
 TimeTable timeTableSample() {
   var subjects = [
     Subject("English"),
@@ -217,8 +203,6 @@ TimeTable timeTableSample() {
   ];
 
   var timeTable = TimeTable(
-    subjects: subjects,
-    timings: timings,
     // days
     sunday: [],
     monday: [Period(subjects[0], timings[0])],
