@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'impls/impls.dart';
@@ -10,10 +10,12 @@ import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:jiffy/jiffy.dart';
 import 'dart:async';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'pages/main_settings.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:sizer/sizer.dart';
 
 void main() {
   runApp(const MyApp());
@@ -272,6 +274,90 @@ class _MyHomePageState extends State<MyHomePage> {
               )
             ],
           ),
+        ),
+        fullyStretchable: true,
+        expandedBody: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const SizedBox(
+              height: 30,
+            ),
+            Column(
+              children: [
+                Day(timetable.sunday, "Sunday"),
+                Day(timetable.monday, "Monday"),
+                Day(timetable.tuesday, "Tuesday"),
+                Day(timetable.wednesday, "Wednesday"),
+                Day(timetable.thursday, "Thursday"),
+                Day(timetable.friday, "Friday"),
+                Day(timetable.saturday, "Saturday"),
+              ].where((day) => day.periods.isNotEmpty).map((day) {
+                return Column(
+                  children: [
+                    Text(
+                      day.name,
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    CarouselSlider(
+                      options: CarouselOptions(
+                        height: 100,
+                        aspectRatio: 1,
+                        viewportFraction: 0.8,
+                        initialPage: 0,
+                        enableInfiniteScroll: true,
+                        reverse: false,
+                        autoPlay: settings.autoPlayPeriodsAnimation,
+                        autoPlayInterval: Duration(seconds: 3),
+                        autoPlayAnimationDuration: Duration(milliseconds: 800),
+                        autoPlayCurve: Curves.fastOutSlowIn,
+                        enlargeCenterPage: false,
+                        enlargeFactor: 0.3,
+                        scrollDirection: Axis.horizontal,
+                      ),
+                      items: List.generate(day.periods.length, (index) {
+                        return Builder(
+                          builder: (BuildContext context) {
+                            return SizedBox(
+                              width: 100,
+                              child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        "#${index + 1}",
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            color: Theme.of(context)
+                                                .iconTheme
+                                                .color),
+                                      ),
+                                      Text(
+                                        day.periods[index].subject.name,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline5!
+                                            .copyWith(color: Colors.white70),
+                                      ),
+                                      Text(
+                                        day.periods[index].timing.toString(),
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color: Theme.of(context)
+                                                .iconTheme
+                                                .color),
+                                      ),
+                                    ],
+                                  )),
+                            );
+                          },
+                        );
+                      }),
+                    )
+                  ],
+                );
+              }).toList(),
+            )
+          ],
         ),
         body: [
           Column(

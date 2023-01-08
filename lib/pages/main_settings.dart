@@ -3,6 +3,7 @@ import 'package:settings_ui/settings_ui.dart';
 
 class MainSettings {
   bool displayPrevPeriod = true;
+  bool autoPlayPeriodsAnimation = false;
 }
 
 class MainSettingsPage extends StatefulWidget {
@@ -36,6 +37,16 @@ class _MainSettingsPageState extends State<MainSettingsPage> {
                 initialValue: widget.settings.displayPrevPeriod,
                 leading: const Icon(Icons.format_paint),
                 title: const Text('Display previous period'),
+              ),
+              SettingsTile.switchTile(
+                onToggle: (value) {
+                  setState(() {
+                    widget.settings.autoPlayPeriodsAnimation = value;
+                  });
+                },
+                initialValue: widget.settings.autoPlayPeriodsAnimation,
+                leading: const Icon(Icons.format_paint),
+                title: const Text('Auto play periods animation'),
               ),
             ],
           ),
