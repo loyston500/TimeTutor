@@ -48,6 +48,7 @@ dependencies:
   google_fonts: ^3.0.1
   receive_sharing_intent: ^1.4.5
   uri_to_file: ^0.2.0
+  shlex: ^2.0.2
 
 dev_dependencies:
   flutter_test:

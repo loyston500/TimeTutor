@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'impls/impls.dart';
 import 'impls/utils.dart';
+import 'impls/timetable.dart';
 import 'package:draggable_home/draggable_home.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:jiffy/jiffy.dart';
@@ -25,27 +26,18 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Time Tutor',
-      theme: FlexThemeData.light(
-        scheme: FlexScheme.mandyRed,
-        surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-        blendLevel: 9,
-        subThemesData: const FlexSubThemesData(
-          blendOnLevel: 10,
-          blendOnColors: false,
-        ),
-        visualDensity: FlexColorScheme.comfortablePlatformDensity,
-        fontFamily: GoogleFonts.notoSans().fontFamily,
+      theme: ThemeData(
+        brightness: Brightness.light,
+        primaryColor: Colors.red,
+        iconTheme: const IconThemeData(color: Colors.purple),
       ),
-      darkTheme: FlexThemeData.dark(
-        scheme: FlexScheme.mandyRed,
-        surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-        blendLevel: 15,
-        subThemesData: const FlexSubThemesData(
-          blendOnLevel: 20,
-        ),
-        visualDensity: FlexColorScheme.comfortablePlatformDensity,
-        fontFamily: GoogleFonts.notoSans().fontFamily,
-      ),
+      darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          primaryColor: Colors.red,
+          iconTheme: const IconThemeData(color: Colors.purple),
+          toggleButtonsTheme: const ToggleButtonsThemeData(),
+          appBarTheme: const AppBarTheme(backgroundColor: Colors.black),
+          backgroundColor: Colors.black),
       themeMode: ThemeMode.dark,
       home: const MyHomePage(title: 'Time Tutor'),
     );
@@ -62,8 +54,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  LocalStorage timeTableJson = LocalStorage("timetable.json");
-  TimeTable timeTable = TimeTable.blank();
+  LocalStorage timetableJson = LocalStorage("timetable.json");
+  Timetable timetable = Timetable.blank();
   MainSettings settings = MainSettings();
 
   late StreamSubscription _intentDataStreamSubscription;
@@ -85,8 +77,6 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         if (Uri.tryParse(value) != null) {
           installTimetableFromContentUri(value);
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Timetable installed")));
         }
       });
     }, onError: (err) {
@@ -98,19 +88,17 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         if (value != null && Uri.tryParse(value) != null) {
           installTimetableFromContentUri(value);
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Timetable installed")));
         }
       });
     });
 
-    timeTableJson.ready.then((_) {
-      if (timeTableJson.getItem("timetable") == null) {
+    timetableJson.ready.then((_) {
+      if (timetableJson.getItem("timetable") == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text(
                 "Hey, seems like you don't have any timetable installed")));
       } else {
-        timeTable = TimeTable.fromJson(timeTableJson.getItem("timetable"));
+        timetable = Timetable.fromJson(timetableJson.getItem("timetable"));
       }
     });
 
@@ -125,13 +113,35 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  void installTimetableFromContentUri(String uri) async {
-    String source =
-        String.fromCharCodes(await Utils.getFileDataFromContentUri(uri));
-    Map<String, dynamic> json = jsonDecode(source);
-    timeTable = TimeTable.fromJson(json);
-    timeTableJson.ready.then(
-        (value) => timeTableJson.setItem("timetable", timeTable.toJson()));
+  void installTimetableFromContentUri(String uri) {
+    Utils.getFileDataFromContentUri(uri).then((source) {
+      try {
+        Map<String, dynamic> json = jsonDecode(String.fromCharCodes(source));
+        timetable = Timetable.fromJson(json);
+      } catch (jsonError) {
+        try {
+          timetable = Timetable.fromText(String.fromCharCodes(source));
+        } catch (textError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text("Error parsing text: ${textError.toString()}")),
+          );
+          return;
+        }
+      }
+
+      timetableJson.ready.then((value) {
+        timetableJson
+            .setItem("timetable", timetable.toJson())
+            .then((value) => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Timetable installed")),
+                ))
+            .onError((error, stackTrace) =>
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Error while saving")),
+                ));
+      });
+    });
   }
 
   @override
@@ -139,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
     DateTime now = DateTime.now();
     TimeOfDay tod = TimeOfDay(hour: now.hour, minute: now.minute);
 
-    List<Period> periods = timeTable.returnDayPeriods(now.weekday);
+    List<Period> periods = timetable.returnDayPeriods(now.weekday);
     Utils.sortPeriods(periods);
 
     Period? currentPeriod;
@@ -171,6 +181,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     return DraggableHome(
+        appBarColor: Colors.black,
+        backgroundColor: Colors.black,
         title: Text(
           currentPeriod != null ? currentPeriod.subject.name : "You're Free",
         ),
@@ -276,9 +288,6 @@ class _MyHomePageState extends State<MyHomePage> {
                           .copyWith(color: Colors.white70),
                     ),
                   )),
-              TextButton(
-                  onPressed: (() {}),
-                  child: Text("${settings.displayPrevPeriod}")),
             ],
           )
         ]);

@@ -1,4 +1,5 @@
 import 'package:timetutor/impls/impls.dart';
+import 'package:timetutor/impls/timetable.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/foundation.dart';
 
@@ -44,4 +45,37 @@ void main() {
 
     expect(listEquals(timings, preSorted), true);
   });
+
+  test('Timetable text to json validity', (() {
+    const text = """
+        9-10AM           10-11AM    11AM-12PM
+
+Monday  "C programming"  ~prev
+Tuesday Python           ~prev      ~prev
+
+""";
+
+    final Map<String, List<Map<String, Map<String, String>>>> json =
+        Timetable.textToJson(text);
+
+    expect(json, {
+      "sunday": [],
+      "monday": [
+        {
+          "subject": {"name": "C programming"},
+          "timing": {"string": "9:00 AM-11:00 AM"}
+        }
+      ],
+      'tuesday': [
+        {
+          "subject": {"name": "Python"},
+          "timing": {"string": "9:00 AM-12:00 PM"}
+        }
+      ],
+      'wednesday': [],
+      'thursday': [],
+      'friday': [],
+      'saturday': [],
+    });
+  }));
 }

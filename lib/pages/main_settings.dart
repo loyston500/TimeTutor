@@ -20,6 +20,9 @@ class _MainSettingsPageState extends State<MainSettingsPage> {
     return Scaffold(
       appBar: AppBar(title: const Text("Settings")),
       body: SettingsList(
+        darkTheme: const SettingsThemeData(
+          titleTextColor: Colors.purpleAccent,
+        ),
         sections: [
           SettingsSection(
             title: const Text('Common'),
