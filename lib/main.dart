@@ -15,7 +15,6 @@ import 'pages/main_settings.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:sizer/sizer.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,12 +33,17 @@ class MyApp extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.purple),
       ),
       darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          primaryColor: Colors.red,
-          iconTheme: const IconThemeData(color: Colors.purple),
-          toggleButtonsTheme: const ToggleButtonsThemeData(),
-          appBarTheme: const AppBarTheme(backgroundColor: Colors.black),
-          backgroundColor: Colors.black),
+        brightness: Brightness.dark,
+        primaryColor: Colors.red,
+        iconTheme: const IconThemeData(color: Colors.purple),
+        toggleButtonsTheme: const ToggleButtonsThemeData(),
+        appBarTheme: const AppBarTheme(backgroundColor: Colors.black),
+        backgroundColor: Colors.black,
+        textTheme: Theme.of(context).textTheme.apply(
+              bodyColor: Colors.white70,
+              displayColor: Colors.white70,
+            ),
+      ),
       themeMode: ThemeMode.dark,
       home: const MyHomePage(title: 'Time Tutor'),
     );
@@ -187,6 +191,7 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Colors.black,
         title: Text(
           currentPeriod != null ? currentPeriod.subject.name : "You're Free",
+          style: TextStyle(color: Theme.of(context).textTheme.bodyText2!.color),
         ),
         actions: [
           IconButton(
@@ -211,14 +216,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    currentPeriod != null
-                        ? currentPeriod.subject.name
-                        : "You're Free",
-                    style: Theme.of(context)
-                        .textTheme
-                        .headline2!
-                        .copyWith(color: Colors.white70),
-                  ),
+                      currentPeriod != null
+                          ? currentPeriod.subject.name
+                          : "You're Free",
+                      style: Theme.of(context).textTheme.headline2!),
                 ),
               ),
               Text(
@@ -245,30 +246,25 @@ class _MyHomePageState extends State<MyHomePage> {
                   if (periods.isEmpty)
                     const Text(
                       "You don't have any periods for today!",
-                      style: TextStyle(color: Colors.white70),
                     )
                   else if (currentPeriod == periods.last)
                     const Text(
                       "This is your last period for today!",
-                      style: TextStyle(color: Colors.white70),
                     )
                   else if (nextPeriod != null)
                     Text(
                       "${nextPeriod.subject.name}"
                       " ${Jiffy(Utils.timeOfDayToDateTime(now, nextPeriod.timing.from)).from(now)}",
-                      style: const TextStyle(color: Colors.white70),
                     )
                   else
                     const Text(
                       "No more periods for today!",
-                      style: TextStyle(color: Colors.white70),
                     ),
                   const SizedBox(height: 10),
                   if (settings.displayPrevPeriod && prevPeriod != null)
                     Text(
                       "${prevPeriod.subject.name} was ${Jiffy(Utils.timeOfDayToDateTime(now, prevPeriod.timing.to)).from(now)}",
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: const TextStyle(fontSize: 12),
                     ),
                 ],
               )
@@ -284,19 +280,26 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             Column(
               children: [
-                Day(timetable.sunday, "Sunday"),
-                Day(timetable.monday, "Monday"),
-                Day(timetable.tuesday, "Tuesday"),
-                Day(timetable.wednesday, "Wednesday"),
-                Day(timetable.thursday, "Thursday"),
-                Day(timetable.friday, "Friday"),
-                Day(timetable.saturday, "Saturday"),
-              ].where((day) => day.periods.isNotEmpty).map((day) {
+                DayProperties(DateTime.sunday, "Sunday"),
+                DayProperties(DateTime.monday, "Monday"),
+                DayProperties(DateTime.tuesday, "Tuesday"),
+                DayProperties(DateTime.wednesday, "Wednesday"),
+                DayProperties(DateTime.thursday, "Thursday"),
+                DayProperties(DateTime.friday, "Friday"),
+                DayProperties(DateTime.saturday, "Saturday"),
+              ]
+                  .where((dayProperty) =>
+                      timetable.returnDayPeriods(dayProperty.day).isNotEmpty)
+                  .map((dayProperty) {
+                final periods = timetable.returnDayPeriods(dayProperty.day);
                 return Column(
                   children: [
                     Text(
-                      day.name,
-                      style: TextStyle(color: Colors.white70),
+                      dayProperty.name,
+                      style: TextStyle(
+                          color: dayProperty.day == now.weekday
+                              ? Colors.red
+                              : null),
                     ),
                     CarouselSlider(
                       options: CarouselOptions(
@@ -307,14 +310,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         enableInfiniteScroll: true,
                         reverse: false,
                         autoPlay: settings.autoPlayPeriodsAnimation,
-                        autoPlayInterval: Duration(seconds: 3),
-                        autoPlayAnimationDuration: Duration(milliseconds: 800),
+                        autoPlayInterval: const Duration(seconds: 3),
+                        autoPlayAnimationDuration:
+                            const Duration(milliseconds: 800),
                         autoPlayCurve: Curves.fastOutSlowIn,
-                        enlargeCenterPage: false,
-                        enlargeFactor: 0.3,
+                        enlargeCenterPage: true,
+                        enlargeFactor: 1,
                         scrollDirection: Axis.horizontal,
                       ),
-                      items: List.generate(day.periods.length, (index) {
+                      items: List.generate(periods.length, (index) {
                         return Builder(
                           builder: (BuildContext context) {
                             return SizedBox(
@@ -332,14 +336,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 .color),
                                       ),
                                       Text(
-                                        day.periods[index].subject.name,
+                                        periods[index].subject.name,
                                         style: Theme.of(context)
                                             .textTheme
-                                            .headline5!
-                                            .copyWith(color: Colors.white70),
+                                            .headline5!,
                                       ),
                                       Text(
-                                        day.periods[index].timing.toString(),
+                                        periods[index].timing.toString(),
                                         style: TextStyle(
                                             fontSize: 10,
                                             color: Theme.of(context)
@@ -366,13 +369,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   alignment: Alignment.topLeft,
                   child: Container(
                     margin: const EdgeInsets.only(left: 20),
-                    child: Text(
-                      "Today's tasks",
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall!
-                          .copyWith(color: Colors.white70),
-                    ),
+                    child: Text("Today's tasks",
+                        style: Theme.of(context).textTheme.headlineSmall!),
                   )),
             ],
           )

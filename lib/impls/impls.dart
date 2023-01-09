@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-class Day {
-  List<Period> periods;
+class DayProperties {
+  int day;
   String name;
 
-  Day(this.periods, this.name);
+  DayProperties(this.day, this.name);
 }
 
 @JsonSerializable()
