@@ -23,12 +23,13 @@ jobs:
         with:
           flutter-version: "3.3.3"
       - run: flutter pub get
-      - run: flutter test
+      - name: Tests
+        run: flutter test
       - run: flutter build apk --release
       - name: Push to Release
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/app/outputs/apk/release/*"
           tag: v1.0.${{ github.run_number }}
           token: ${{ secrets.ACCESS_TOKEN }}
-    
