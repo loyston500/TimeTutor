@@ -162,8 +162,12 @@ class _MyHomePageState extends State<MyHomePage> {
     Period? nextPeriod;
     Period? prevPeriod;
 
-    for (int i = 0; i < periods.length; i++) {
-      var period = periods[i];
+    late int currentPeriodPos;
+
+    for (currentPeriodPos = 0;
+        currentPeriodPos < periods.length;
+        currentPeriodPos++) {
+      var period = periods[currentPeriodPos];
       double percent =
           Utils.percentage(tod, period.timing.from, period.timing.to);
       if (percent > 1) {
@@ -171,16 +175,16 @@ class _MyHomePageState extends State<MyHomePage> {
       } else if (percent >= 0 && percent <= 1) {
         currentPeriod = period;
         if (period != periods.last) {
-          nextPeriod = periods[i + 1];
+          nextPeriod = periods[currentPeriodPos + 1];
         }
         if (period != periods.first) {
-          prevPeriod = periods[i - 1];
+          prevPeriod = periods[currentPeriodPos - 1];
         }
         break;
       } else {
         nextPeriod = period;
         if (period != periods.first) {
-          prevPeriod = periods[i - 1];
+          prevPeriod = periods[currentPeriodPos - 1];
         }
         break;
       }
@@ -211,6 +215,8 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              if (currentPeriod != null)
+                Text("${currentPeriodPos + 1}/${periods.length}"),
               SizedBox(
                 width: 350,
                 child: FittedBox(
@@ -232,6 +238,7 @@ class _MyHomePageState extends State<MyHomePage> {
               if (currentPeriod != null)
                 LinearPercentIndicator(
                   alignment: MainAxisAlignment.center,
+                  progressColor: Theme.of(context).iconTheme.color,
                   width: 120.0,
                   lineHeight: 3.0,
                   percent: Utils.percentage(
@@ -328,7 +335,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   child: Column(
                                     children: [
                                       Text(
-                                        "#${index + 1}",
+                                        "${index + 1}/${periods.length}",
                                         style: TextStyle(
                                             fontSize: 13,
                                             color: Theme.of(context)
