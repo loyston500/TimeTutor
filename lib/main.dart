@@ -28,16 +28,17 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Time Tutor',
       theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: Colors.red,
+        brightness: Brightness.dark,
+        primaryColor: Colors.purple,
         iconTheme: const IconThemeData(color: Colors.purple),
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        primaryColor: Colors.red,
+        primaryColor: Colors.purple,
         iconTheme: const IconThemeData(color: Colors.purple),
         toggleButtonsTheme: const ToggleButtonsThemeData(),
         appBarTheme: const AppBarTheme(backgroundColor: Colors.black),
+        toggleableActiveColor: Colors.purple,
         backgroundColor: Colors.black,
         textTheme: Theme.of(context).textTheme.apply(
               bodyColor: Colors.white70,
@@ -305,7 +306,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       dayProperty.name,
                       style: TextStyle(
                           color: dayProperty.day == now.weekday
-                              ? Colors.red
+                              ? Theme.of(context).primaryColor
                               : null),
                     ),
                     CarouselSlider(
