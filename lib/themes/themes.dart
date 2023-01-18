@@ -2,6 +2,13 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 
+class ThemeSet {
+  ThemeData light;
+  ThemeData dark;
+
+  ThemeSet(this.light, this.dark);
+}
+
 class Themes {
   Themes._();
 
@@ -81,6 +88,88 @@ class Themes {
     visualDensity: FlexColorScheme.comfortablePlatformDensity,
     useMaterial3: true,
     fontFamily: GoogleFonts.oswald().fontFamily,
+  );
+
+  // This theme was made for FlexColorScheme version 6.1.1. Make sure
+// you use same or higher version, but still same major version. If
+// you use a lower version, some properties may not be supported. In
+// that case you can also remove them after copying the theme to your app.
+  static ThemeData cyberpunkLight = FlexThemeData.light(
+    colors: const FlexSchemeColor(
+      primary: Color(0xfffcee03),
+      primaryContainer: Color(0xff000000),
+      secondary: Color(0xff03d8f3),
+      secondaryContainer: Color(0xff448aff),
+      tertiary: Color(0xfffcee03),
+      tertiaryContainer: Color(0xff448aff),
+      appBarColor: Color(0xff03d8f3),
+      error: Color(0xffcf6679),
+    ),
+    usedColors: 2,
+    surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
+    blendLevel: 9,
+    tabBarStyle: FlexTabBarStyle.forBackground,
+    subThemesData: const FlexSubThemesData(
+      blendOnLevel: 10,
+      blendOnColors: false,
+      textButtonSchemeColor: SchemeColor.secondary,
+      elevatedButtonSchemeColor: SchemeColor.secondary,
+      outlinedButtonSchemeColor: SchemeColor.secondary,
+      toggleButtonsSchemeColor: SchemeColor.secondary,
+      switchSchemeColor: SchemeColor.secondary,
+      checkboxSchemeColor: SchemeColor.secondary,
+      radioSchemeColor: SchemeColor.secondary,
+      //sliderBaseSchemeColor: SchemeColor.secondary,
+      inputDecoratorRadius: 40.0,
+      //inputDecoratorBorderWidth: 1.0,
+      //inputDecoratorFocusedBorderWidth: 1.0,
+      //tooltipSchemeColor: SchemeColor.primary,
+      bottomNavigationBarSelectedLabelSchemeColor: SchemeColor.secondary,
+      bottomNavigationBarSelectedIconSchemeColor: SchemeColor.secondary,
+      bottomNavigationBarBackgroundSchemeColor: SchemeColor.surface,
+    ),
+    visualDensity: FlexColorScheme.comfortablePlatformDensity,
+    useMaterial3: true,
+    fontFamily: "CyberPunk",
+  );
+
+  static ThemeData cyberpunkDark = FlexThemeData.dark(
+    colors: const FlexSchemeColor(
+      primary: Color(0xfffcee03),
+      primaryContainer: Color(0xff000000),
+      secondary: Color(0xff03d8f3),
+      secondaryContainer: Color(0xff448aff),
+      tertiary: Color(0xfffcee03),
+      tertiaryContainer: Color(0xff448aff),
+      appBarColor: Color(0xff03d8f3),
+      error: Color(0xffcf6679),
+    ),
+    usedColors: 2,
+    appBarStyle: FlexAppBarStyle.surface,
+    tabBarStyle: FlexTabBarStyle.forBackground,
+    darkIsTrueBlack: true,
+    subThemesData: const FlexSubThemesData(
+      blendOnLevel: 19,
+      textButtonSchemeColor: SchemeColor.secondary,
+      elevatedButtonSchemeColor: SchemeColor.secondary,
+      outlinedButtonSchemeColor: SchemeColor.secondary,
+      toggleButtonsSchemeColor: SchemeColor.secondary,
+      switchSchemeColor: SchemeColor.secondary,
+      checkboxSchemeColor: SchemeColor.secondary,
+      radioSchemeColor: SchemeColor.secondary,
+      //sliderBaseSchemeColor: SchemeColor.secondary,
+      inputDecoratorSchemeColor: SchemeColor.secondary,
+      inputDecoratorRadius: 40.0,
+      //inputDecoratorBorderWidth: 1.0,
+      //inputDecoratorFocusedBorderWidth: 1.0,
+      //tooltipSchemeColor: SchemeColor.primary,
+      bottomNavigationBarSelectedLabelSchemeColor: SchemeColor.secondary,
+      bottomNavigationBarSelectedIconSchemeColor: SchemeColor.secondary,
+      bottomNavigationBarBackgroundSchemeColor: SchemeColor.surface,
+    ),
+    visualDensity: FlexColorScheme.comfortablePlatformDensity,
+    useMaterial3: true,
+    fontFamily: "CyberPunk",
   );
 
   static ThemeData themeFromPrimaryColor(Color primaryColor, ThemeMode type) {
@@ -164,4 +253,8 @@ class Themes {
       );
     }
   }
+
+  static Map<String, ThemeSet> themes = {
+    "cyberpunk": ThemeSet(cyberpunkLight, cyberpunkDark),
+  };
 }

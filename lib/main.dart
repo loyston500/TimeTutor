@@ -1,19 +1,21 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:timetutor/impls/impls.dart';
-import 'package:timetutor/impls/utils.dart';
-import 'package:timetutor/impls/timetable.dart';
 import 'package:timetutor/themes/themes.dart';
 import 'package:draggable_home/draggable_home.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:jiffy/jiffy.dart';
 import 'dart:async';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:timetutor/pages/main_settings.dart';
-import 'package:localstorage/localstorage.dart';
+import 'package:timetutor/pages/settings.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:timetutor/db.dart';
+import 'package:timetutor/models/models.dart';
+import 'package:yaml/yaml.dart';
 
-void main() {
+Future<void> main() async {
+  await Db.init();
   runApp(const App());
 }
 
@@ -25,58 +27,66 @@ class App extends StatefulWidget {
 }
 
 class AppState extends State<App> {
-  MainSettings settings = MainSettings();
-  ThemeData lightTheme = Themes.light;
-  ThemeData darkTheme = Themes.dark;
+  final _settingsStream = isar.currentSettings.watchObject(0);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Time Tutor',
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,
-      home: HomePage(
+      theme: currentSettings.customThemeId.isEmpty
+          ? Themes.themeFromPrimaryColor(
+              Color(currentSettings.themeColor), ThemeMode.light)
+          : Themes.themes[currentSettings.customThemeId]!.light,
+      darkTheme: currentSettings.customThemeId.isEmpty
+          ? Themes.themeFromPrimaryColor(
+              Color(currentSettings.themeColor), ThemeMode.dark)
+          : Themes.themes[currentSettings.customThemeId]!.dark,
+      themeMode: currentSettings.darkMode ? ThemeMode.dark : ThemeMode.light,
+      home: const HomePage(
         title: 'Time Tutor',
-        root: root,
       ),
     );
   }
 
-  void setDarkTheme(ThemeData themeData) {
-    setState(() {
-      darkTheme = themeData;
-    });
-  }
-
-  void setLightTheme(ThemeData themeData) {
-    setState(() {
-      lightTheme = themeData;
-    });
+  void refreshNavigationBar() {
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarDividerColor: Colors.transparent,
+          systemNavigationBarIconBrightness: Theme.of(context).brightness,
+          statusBarIconBrightness: Theme.of(context).brightness),
+    );
   }
 
   void refresh() => setState(() {});
 
-  AppState root() {
-    return this;
+  @override
+  void initState() {
+    super.initState();
+
+    _settingsStream.listen((event) {
+      refresh();
+    });
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title, required this.root});
+  const HomePage({super.key, required this.title});
 
   final String title;
-  final AppState Function() root;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  final _userTimetableStream =
+      isar.userTimetables.watchObjectLazy(0, fireImmediately: true);
+  final _onGoingTasksStream =
+      isar.onGoingTasks.watchLazy(fireImmediately: true);
+
   ThemeMode themeMode = ThemeMode.dark;
-  LocalStorage timetableJson = LocalStorage("timetable.json");
-  Timetable timetable = Timetable.blank();
 
   late StreamSubscription _intentDataStreamSubscription;
   late Timer timer;
@@ -85,13 +95,13 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    /*SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-          systemNavigationBarColor: Colors.transparent,
-          systemNavigationBarDividerColor: Colors.transparent,
-          systemNavigationBarIconBrightness: Theme.of(context).brightness,
-          statusBarIconBrightness: Theme.of(context).brightness),
-    );*/
+    _onGoingTasksStream.listen((event) {
+      setState(() {});
+    });
+
+    _userTimetableStream.listen((event) {
+      setState(() {});
+    });
 
     _intentDataStreamSubscription =
         ReceiveSharingIntent.getTextStream().listen((String value) {
@@ -113,16 +123,6 @@ class _HomePageState extends State<HomePage> {
       });
     });
 
-    timetableJson.ready.then((_) {
-      if (timetableJson.getItem("timetable") == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text(
-                "Hey, seems like you don't have any timetable installed")));
-      } else {
-        timetable = Timetable.fromJson(timetableJson.getItem("timetable"));
-      }
-    });
-
     timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
       setState(() {});
     });
@@ -136,32 +136,36 @@ class _HomePageState extends State<HomePage> {
 
   void installTimetableFromContentUri(String uri) {
     Utils.getFileDataFromContentUri(uri).then((source) {
+      final string = String.fromCharCodes(source);
+      late Map yaml;
       try {
-        Map<String, dynamic> json = jsonDecode(String.fromCharCodes(source));
-        timetable = Timetable.fromJson(json);
-      } catch (jsonError) {
-        try {
-          timetable = Timetable.fromText(String.fromCharCodes(source));
-        } catch (textError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text("Error parsing text: ${textError.toString()}")),
-          );
-          return;
-        }
+        yaml = loadYaml(string);
+      } catch (e) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Bad data: ${e.toString()}")));
+        return;
       }
 
-      timetableJson.ready.then((value) {
-        timetableJson
-            .setItem("timetable", timetable.toJson())
-            .then((value) => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Timetable installed")),
-                ))
-            .onError((error, stackTrace) =>
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Error while saving")),
-                ));
-      });
+      late ParsedYamlData data;
+      try {
+        data = Utils.parseYamlData(jsonDecode(jsonEncode(yaml)));
+      } on Exception catch (e) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Bad data: ${e.toString()}")));
+        return;
+      }
+
+      // TODO: implement more type support
+      if (data.type == YamlDataType.install) {
+        userTimetable = data.timetable!;
+        isar.writeTxn(() async {
+          await isar.userTimetables.put(userTimetable);
+        }).then((value) => ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Install success"))));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("This version of file is currently not supported")));
+      }
     });
   }
 
@@ -170,7 +174,7 @@ class _HomePageState extends State<HomePage> {
     DateTime now = DateTime.now();
     TimeOfDay tod = TimeOfDay(hour: now.hour, minute: now.minute);
 
-    List<Period> periods = timetable.returnDayPeriods(now.weekday);
+    List<Period> periods = userTimetable.returnDayPeriods(now.weekday);
     Utils.sortPeriods(periods);
 
     Period? currentPeriod;
@@ -183,8 +187,10 @@ class _HomePageState extends State<HomePage> {
         currentPeriodPos < periods.length;
         currentPeriodPos++) {
       var period = periods[currentPeriodPos];
-      double percent =
-          Utils.percentage(tod, period.timing.from, period.timing.to);
+      double percent = Utils.percentage(
+          tod,
+          Utils.dateTimeAsTimeOfDay(period.timing.from),
+          Utils.dateTimeAsTimeOfDay(period.timing.to));
       if (percent > 1) {
         prevPeriod = period;
       } else if (percent >= 0 && percent <= 1) {
@@ -218,10 +224,7 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => MainSettingsPage(
-                    settings: widget.root().settings,
-                    root: widget.root,
-                  ),
+                  builder: (context) => const SettingsPage(),
                 ),
               );
             },
@@ -241,7 +244,16 @@ class _HomePageState extends State<HomePage> {
                     currentPeriod != null
                         ? currentPeriod.subject.name
                         : "You're Free",
-                    style: Theme.of(context).textTheme.headline2!),
+                    style: Theme.of(context)
+                        .textTheme
+                        .headline2!
+                        .copyWith(shadows: [
+                      if (currentSettings.enablePeriodNameShadow)
+                        Shadow(
+                            color: Theme.of(context).toggleButtonsTheme.color!,
+                            blurRadius: 0,
+                            offset: const Offset(2.0, 0))
+                    ])),
               ),
             ),
             Text(
@@ -255,12 +267,25 @@ class _HomePageState extends State<HomePage> {
             if (currentPeriod != null)
               LinearPercentIndicator(
                 alignment: MainAxisAlignment.center,
-                progressColor: Theme.of(context).primaryColor,
+                linearGradient: currentSettings.mainBarGradient
+                    ? LinearGradient(colors: [
+                        Theme.of(context).primaryColor,
+                        Theme.of(context).toggleButtonsTheme.color!,
+                      ])
+                    : null,
+                progressColor: !currentSettings.mainBarGradient
+                    ? Theme.of(context).toggleButtonsTheme.color
+                    : null,
+                backgroundColor: Colors.grey.withOpacity(0.3),
+                barRadius: const Radius.circular(5),
                 width: 120.0,
                 lineHeight: 3.0,
                 percent: Utils.percentage(
-                    tod, currentPeriod.timing.from, currentPeriod.timing.to),
-                animation: false,
+                    tod,
+                    Utils.dateTimeAsTimeOfDay(currentPeriod.timing.from),
+                    Utils.dateTimeAsTimeOfDay(currentPeriod.timing.to)),
+                animation: true,
+                animateFromLastPercent: true,
                 animationDuration: 1000,
               ),
             const SizedBox(height: 30),
@@ -278,17 +303,16 @@ class _HomePageState extends State<HomePage> {
                 else if (nextPeriod != null)
                   Text(
                     "${nextPeriod.subject.name}"
-                    " ${Jiffy(Utils.timeOfDayToDateTime(now, nextPeriod.timing.from)).from(now)}",
+                    " ${Jiffy(DateTime(now.year, now.month, now.day, nextPeriod.timing.from.hour, nextPeriod.timing.from.minute)).from(now)}",
                   )
                 else
                   const Text(
                     "No more periods for today!",
                   ),
                 const SizedBox(height: 10),
-                if (widget.root().settings.displayPrevPeriod &&
-                    prevPeriod != null)
+                if (currentSettings.displayPrevPeriod && prevPeriod != null)
                   Text(
-                    "${prevPeriod.subject.name} was ${Jiffy(Utils.timeOfDayToDateTime(now, prevPeriod.timing.to)).from(now)}",
+                    "${prevPeriod.subject.name} was ${Jiffy(DateTime(now.year, now.month, now.day, prevPeriod.timing.from.hour, prevPeriod.timing.from.minute)).from(now)}",
                     style: const TextStyle(fontSize: 12),
                   ),
               ],
@@ -315,17 +339,18 @@ class _HomePageState extends State<HomePage> {
                 DayProperties(DateTime.friday, "Friday"),
                 DayProperties(DateTime.saturday, "Saturday"),
               ]
-                  .where((dayProperty) =>
-                      timetable.returnDayPeriods(dayProperty.day).isNotEmpty)
+                  .where((dayProperty) => userTimetable
+                      .returnDayPeriods(dayProperty.day)
+                      .isNotEmpty)
                   .map((dayProperty) {
-                final periods = timetable.returnDayPeriods(dayProperty.day);
+                final periods = userTimetable.returnDayPeriods(dayProperty.day);
                 return Column(
                   children: [
                     Text(
                       dayProperty.name,
                       style: TextStyle(
                           color: dayProperty.day == now.weekday
-                              ? Theme.of(context).primaryColor
+                              ? Theme.of(context).toggleButtonsTheme.color!
                               : null),
                     ),
                     CarouselSlider(
@@ -337,19 +362,12 @@ class _HomePageState extends State<HomePage> {
                                 currentPeriod != null
                             ? currentPeriodPos
                             : 0,
-                        enableInfiniteScroll: widget
-                            .root()
-                            .settings
-                            .timetableEnableInfiniteScroll,
-                        autoPlay: widget
-                            .root()
-                            .settings
-                            .timetableAutoPlayPeriodsAnimation,
+                        enableInfiniteScroll:
+                            currentSettings.timetableEnableInfiniteScroll,
+                        autoPlay:
+                            currentSettings.timetableAutoPlayPeriodsAnimation,
                         autoPlayInterval: Duration(
-                            seconds: widget
-                                .root()
-                                .settings
-                                .timetableAutoPlayInterval),
+                            seconds: currentSettings.timetableAutoPlayInterval),
                         autoPlayAnimationDuration:
                             const Duration(milliseconds: 800),
                         autoPlayCurve: Curves.fastOutSlowIn,
@@ -383,11 +401,13 @@ class _HomePageState extends State<HomePage> {
                                                 .headline5!
                                                 .copyWith(
                                                     color: Theme.of(context)
-                                                        .primaryColor,
+                                                        .toggleButtonsTheme
+                                                        .color,
                                                     shadows: [
                                                     Shadow(
                                                       color: Theme.of(context)
-                                                          .primaryColor,
+                                                          .toggleButtonsTheme
+                                                          .color!,
                                                       blurRadius: 10,
                                                     )
                                                   ])
@@ -421,19 +441,103 @@ class _HomePageState extends State<HomePage> {
       body: [
         Column(
           children: [
-            Align(
-                alignment: Alignment.topLeft,
-                child: Container(
-                  margin: const EdgeInsets.only(left: 20),
-                  child: Text("Today's tasks",
-                      style: Theme.of(context).textTheme.headlineSmall!),
-                )),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Container(
+                decoration:
+                    BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                child: Column(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(left: 20),
+                      alignment: Alignment.centerLeft,
+                      child: Text("Today's tasks",
+                          style: Theme.of(context).textTheme.headlineSmall!),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      height: 280,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            for (var task in onGoingTasks)
+                              Column(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    height: 50,
+                                    child: Material(
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(10),
+                                        splashColor:
+                                            Theme.of(context).primaryColor,
+                                        onTap: () {
+                                          // TODO: implement task click
+                                        },
+                                        onLongPress: () {},
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            backgroundBlendMode:
+                                                BlendMode.overlay,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            color: Color(task.color ??
+                                                Theme.of(context)
+                                                    .primaryColorLight
+                                                    .value),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Container(
+                                                width: 250,
+                                                padding: const EdgeInsets.only(
+                                                    left: 20),
+                                                child: Text(
+                                                  task.name,
+                                                  overflow: TextOverflow.fade,
+                                                ),
+                                              ),
+                                              Container(
+                                                padding: const EdgeInsets.only(
+                                                    right: 20),
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: Row(
+                                                  children: [
+                                                    CircleAvatar(
+                                                      backgroundColor: Color(task
+                                                              .color ??
+                                                          Theme.of(context)
+                                                              .primaryColorLight
+                                                              .value),
+                                                      radius: 10,
+                                                    )
+                                                  ],
+                                                ),
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            TextButton(
+                                onPressed: () {}, child: const Text("Add"))
+                          ],
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
           ],
         )
       ],
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-      ),
     );
   }
 }

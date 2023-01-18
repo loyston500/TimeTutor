@@ -17,7 +17,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0
+version: 1.0.1
 
 environment:
   sdk: '>=2.18.2 <3.0.0'
@@ -44,11 +44,16 @@ dependencies:
   carousel_slider: ^4.2.1
   settings_ui: ^2.0.2
   flex_color_scheme: ^5.0.0
-  localstorage: ^4.0.0+1
   google_fonts: ^3.0.1
   receive_sharing_intent: ^1.4.5
   uri_to_file: ^0.2.0
   shlex: ^2.0.2
+  flutter_colorpicker: ^1.0.3
+  path: ^1.8.2
+  path_provider: ^2.0.11
+  isar: ^3.0.5
+  isar_flutter_libs: ^3.0.5
+  yaml: ^3.1.1
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +67,10 @@ dev_dependencies:
   flutter_lints: ^2.0.0
   flutter_launcher_icons: ^0.11.0
 
+  build_runner: ^2.3.3
+  json_serializable: ^6.5.4
+  isar_generator: ^3.0.5
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -72,6 +81,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  fonts:
+    - family: Cyberpunk
+      fonts:
+        - asset: assets/fonts/Cyberpunk2.ttf
+          weight: 300
 
   # To add assets to your application, add an assets section, like this:
   # assets:
