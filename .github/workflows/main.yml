@@ -3,11 +3,7 @@ on:
   push:
     branches:
       - main
-
-concurrency: 
-  group: ${{ github.head_ref }}
-  cancel-in-progress: true
-
+      
 jobs:
   job1:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
