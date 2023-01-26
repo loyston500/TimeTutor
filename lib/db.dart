@@ -3,7 +3,7 @@ import 'package:isar/isar.dart';
 
 late Isar isar;
 late CurrentSettings currentSettings;
-late List<Task> onGoingTasks;
+late List<OnGoingTask> onGoingTasks;
 late UserTimetable userTimetable;
 
 class Db {
