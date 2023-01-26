@@ -32,9 +32,15 @@ const CompletedTaskSchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'name': PropertySchema(
+    r'subject': PropertySchema(
       id: 3,
-      name: r'name',
+      name: r'subject',
+      type: IsarType.object,
+      target: r'Subject',
+    ),
+    r'title': PropertySchema(
+      id: 4,
+      name: r'title',
       type: IsarType.string,
     )
   },
@@ -45,7 +51,7 @@ const CompletedTaskSchema = CollectionSchema(
   idName: r'id',
   indexes: {},
   links: {},
-  embeddedSchemas: {},
+  embeddedSchemas: {r'Subject': SubjectSchema},
   getId: _completedTaskGetId,
   getLinks: _completedTaskGetLinks,
   attach: _completedTaskAttach,
@@ -64,7 +70,14 @@ int _completedTaskEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.name.length * 3;
+  {
+    final value = object.subject;
+    if (value != null) {
+      bytesCount += 3 +
+          SubjectSchema.estimateSize(value, allOffsets[Subject]!, allOffsets);
+    }
+  }
+  bytesCount += 3 + object.title.length * 3;
   return bytesCount;
 }
 
@@ -77,7 +90,13 @@ void _completedTaskSerialize(
   writer.writeLong(offsets[0], object.color);
   writer.writeDateTime(offsets[1], object.date);
   writer.writeString(offsets[2], object.description);
-  writer.writeString(offsets[3], object.name);
+  writer.writeObject<Subject>(
+    offsets[3],
+    allOffsets,
+    SubjectSchema.serialize,
+    object.subject,
+  );
+  writer.writeString(offsets[4], object.title);
 }
 
 CompletedTask _completedTaskDeserialize(
@@ -90,7 +109,12 @@ CompletedTask _completedTaskDeserialize(
     color: reader.readLongOrNull(offsets[0]),
     date: reader.readDateTime(offsets[1]),
     description: reader.readStringOrNull(offsets[2]),
-    name: reader.readString(offsets[3]),
+    subject: reader.readObjectOrNull<Subject>(
+      offsets[3],
+      SubjectSchema.deserialize,
+      allOffsets,
+    ),
+    title: reader.readString(offsets[4]),
   );
   object.id = id;
   return object;
@@ -110,6 +134,12 @@ P _completedTaskDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
+      return (reader.readObjectOrNull<Subject>(
+        offset,
+        SubjectSchema.deserialize,
+        allOffsets,
+      )) as P;
+    case 4:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -549,13 +579,32 @@ extension CompletedTaskQueryFilter
     });
   }
 
-  QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition> nameEqualTo(
+  QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
+      subjectIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'subject',
+      ));
+    });
+  }
+
+  QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
+      subjectIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'subject',
+      ));
+    });
+  }
+
+  QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
+      titleEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -563,7 +612,7 @@ extension CompletedTaskQueryFilter
   }
 
   QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
-      nameGreaterThan(
+      titleGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -571,7 +620,7 @@ extension CompletedTaskQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -579,7 +628,7 @@ extension CompletedTaskQueryFilter
   }
 
   QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
-      nameLessThan(
+      titleLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -587,14 +636,15 @@ extension CompletedTaskQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition> nameBetween(
+  QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
+      titleBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -603,7 +653,7 @@ extension CompletedTaskQueryFilter
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
-        property: r'name',
+        property: r'title',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -614,13 +664,13 @@ extension CompletedTaskQueryFilter
   }
 
   QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
-      nameStartsWith(
+      titleStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -628,13 +678,13 @@ extension CompletedTaskQueryFilter
   }
 
   QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
-      nameEndsWith(
+      titleEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -642,22 +692,21 @@ extension CompletedTaskQueryFilter
   }
 
   QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
-      nameContains(String value, {bool caseSensitive = true}) {
+      titleContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition> nameMatches(
-      String pattern,
-      {bool caseSensitive = true}) {
+  QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
+      titleMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
-        property: r'name',
+        property: r'title',
         wildcard: pattern,
         caseSensitive: caseSensitive,
       ));
@@ -665,20 +714,20 @@ extension CompletedTaskQueryFilter
   }
 
   QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
-      nameIsEmpty() {
+      titleIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'name',
+        property: r'title',
         value: '',
       ));
     });
   }
 
   QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition>
-      nameIsNotEmpty() {
+      titleIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'name',
+        property: r'title',
         value: '',
       ));
     });
@@ -686,7 +735,14 @@ extension CompletedTaskQueryFilter
 }
 
 extension CompletedTaskQueryObject
-    on QueryBuilder<CompletedTask, CompletedTask, QFilterCondition> {}
+    on QueryBuilder<CompletedTask, CompletedTask, QFilterCondition> {
+  QueryBuilder<CompletedTask, CompletedTask, QAfterFilterCondition> subject(
+      FilterQuery<Subject> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'subject');
+    });
+  }
+}
 
 extension CompletedTaskQueryLinks
     on QueryBuilder<CompletedTask, CompletedTask, QFilterCondition> {}
@@ -730,15 +786,15 @@ extension CompletedTaskQuerySortBy
     });
   }
 
-  QueryBuilder<CompletedTask, CompletedTask, QAfterSortBy> sortByName() {
+  QueryBuilder<CompletedTask, CompletedTask, QAfterSortBy> sortByTitle() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'name', Sort.asc);
+      return query.addSortBy(r'title', Sort.asc);
     });
   }
 
-  QueryBuilder<CompletedTask, CompletedTask, QAfterSortBy> sortByNameDesc() {
+  QueryBuilder<CompletedTask, CompletedTask, QAfterSortBy> sortByTitleDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'name', Sort.desc);
+      return query.addSortBy(r'title', Sort.desc);
     });
   }
 }
@@ -794,15 +850,15 @@ extension CompletedTaskQuerySortThenBy
     });
   }
 
-  QueryBuilder<CompletedTask, CompletedTask, QAfterSortBy> thenByName() {
+  QueryBuilder<CompletedTask, CompletedTask, QAfterSortBy> thenByTitle() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'name', Sort.asc);
+      return query.addSortBy(r'title', Sort.asc);
     });
   }
 
-  QueryBuilder<CompletedTask, CompletedTask, QAfterSortBy> thenByNameDesc() {
+  QueryBuilder<CompletedTask, CompletedTask, QAfterSortBy> thenByTitleDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'name', Sort.desc);
+      return query.addSortBy(r'title', Sort.desc);
     });
   }
 }
@@ -828,10 +884,10 @@ extension CompletedTaskQueryWhereDistinct
     });
   }
 
-  QueryBuilder<CompletedTask, CompletedTask, QDistinct> distinctByName(
+  QueryBuilder<CompletedTask, CompletedTask, QDistinct> distinctByTitle(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'name', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'title', caseSensitive: caseSensitive);
     });
   }
 }
@@ -862,9 +918,15 @@ extension CompletedTaskQueryProperty
     });
   }
 
-  QueryBuilder<CompletedTask, String, QQueryOperations> nameProperty() {
+  QueryBuilder<CompletedTask, Subject?, QQueryOperations> subjectProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'name');
+      return query.addPropertyName(r'subject');
+    });
+  }
+
+  QueryBuilder<CompletedTask, String, QQueryOperations> titleProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'title');
     });
   }
 }
@@ -895,9 +957,15 @@ const OnGoingTaskSchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'name': PropertySchema(
+    r'subject': PropertySchema(
       id: 3,
-      name: r'name',
+      name: r'subject',
+      type: IsarType.object,
+      target: r'Subject',
+    ),
+    r'title': PropertySchema(
+      id: 4,
+      name: r'title',
       type: IsarType.string,
     )
   },
@@ -908,7 +976,7 @@ const OnGoingTaskSchema = CollectionSchema(
   idName: r'id',
   indexes: {},
   links: {},
-  embeddedSchemas: {},
+  embeddedSchemas: {r'Subject': SubjectSchema},
   getId: _onGoingTaskGetId,
   getLinks: _onGoingTaskGetLinks,
   attach: _onGoingTaskAttach,
@@ -927,7 +995,14 @@ int _onGoingTaskEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.name.length * 3;
+  {
+    final value = object.subject;
+    if (value != null) {
+      bytesCount += 3 +
+          SubjectSchema.estimateSize(value, allOffsets[Subject]!, allOffsets);
+    }
+  }
+  bytesCount += 3 + object.title.length * 3;
   return bytesCount;
 }
 
@@ -940,7 +1015,13 @@ void _onGoingTaskSerialize(
   writer.writeLong(offsets[0], object.color);
   writer.writeDateTime(offsets[1], object.date);
   writer.writeString(offsets[2], object.description);
-  writer.writeString(offsets[3], object.name);
+  writer.writeObject<Subject>(
+    offsets[3],
+    allOffsets,
+    SubjectSchema.serialize,
+    object.subject,
+  );
+  writer.writeString(offsets[4], object.title);
 }
 
 OnGoingTask _onGoingTaskDeserialize(
@@ -953,7 +1034,12 @@ OnGoingTask _onGoingTaskDeserialize(
     color: reader.readLongOrNull(offsets[0]),
     date: reader.readDateTime(offsets[1]),
     description: reader.readStringOrNull(offsets[2]),
-    name: reader.readString(offsets[3]),
+    subject: reader.readObjectOrNull<Subject>(
+      offsets[3],
+      SubjectSchema.deserialize,
+      allOffsets,
+    ),
+    title: reader.readString(offsets[4]),
   );
   object.id = id;
   return object;
@@ -973,6 +1059,12 @@ P _onGoingTaskDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
+      return (reader.readObjectOrNull<Subject>(
+        offset,
+        SubjectSchema.deserialize,
+        allOffsets,
+      )) as P;
+    case 4:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1403,20 +1495,39 @@ extension OnGoingTaskQueryFilter
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> nameEqualTo(
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition>
+      subjectIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'subject',
+      ));
+    });
+  }
+
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition>
+      subjectIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'subject',
+      ));
+    });
+  }
+
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> titleEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> nameGreaterThan(
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition>
+      titleGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1424,14 +1535,14 @@ extension OnGoingTaskQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> nameLessThan(
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> titleLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1439,14 +1550,14 @@ extension OnGoingTaskQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> nameBetween(
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> titleBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1455,7 +1566,7 @@ extension OnGoingTaskQueryFilter
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
-        property: r'name',
+        property: r'title',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1465,70 +1576,70 @@ extension OnGoingTaskQueryFilter
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> nameStartsWith(
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> titleStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> nameEndsWith(
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> titleEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> nameContains(
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> titleContains(
       String value,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
-        property: r'name',
+        property: r'title',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> nameMatches(
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> titleMatches(
       String pattern,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
-        property: r'name',
+        property: r'title',
         wildcard: pattern,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> nameIsEmpty() {
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> titleIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'name',
+        property: r'title',
         value: '',
       ));
     });
   }
 
   QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition>
-      nameIsNotEmpty() {
+      titleIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'name',
+        property: r'title',
         value: '',
       ));
     });
@@ -1536,7 +1647,14 @@ extension OnGoingTaskQueryFilter
 }
 
 extension OnGoingTaskQueryObject
-    on QueryBuilder<OnGoingTask, OnGoingTask, QFilterCondition> {}
+    on QueryBuilder<OnGoingTask, OnGoingTask, QFilterCondition> {
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterFilterCondition> subject(
+      FilterQuery<Subject> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'subject');
+    });
+  }
+}
 
 extension OnGoingTaskQueryLinks
     on QueryBuilder<OnGoingTask, OnGoingTask, QFilterCondition> {}
@@ -1579,15 +1697,15 @@ extension OnGoingTaskQuerySortBy
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterSortBy> sortByName() {
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterSortBy> sortByTitle() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'name', Sort.asc);
+      return query.addSortBy(r'title', Sort.asc);
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterSortBy> sortByNameDesc() {
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterSortBy> sortByTitleDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'name', Sort.desc);
+      return query.addSortBy(r'title', Sort.desc);
     });
   }
 }
@@ -1642,15 +1760,15 @@ extension OnGoingTaskQuerySortThenBy
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterSortBy> thenByName() {
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterSortBy> thenByTitle() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'name', Sort.asc);
+      return query.addSortBy(r'title', Sort.asc);
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QAfterSortBy> thenByNameDesc() {
+  QueryBuilder<OnGoingTask, OnGoingTask, QAfterSortBy> thenByTitleDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'name', Sort.desc);
+      return query.addSortBy(r'title', Sort.desc);
     });
   }
 }
@@ -1676,10 +1794,10 @@ extension OnGoingTaskQueryWhereDistinct
     });
   }
 
-  QueryBuilder<OnGoingTask, OnGoingTask, QDistinct> distinctByName(
+  QueryBuilder<OnGoingTask, OnGoingTask, QDistinct> distinctByTitle(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'name', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'title', caseSensitive: caseSensitive);
     });
   }
 }
@@ -1710,9 +1828,15 @@ extension OnGoingTaskQueryProperty
     });
   }
 
-  QueryBuilder<OnGoingTask, String, QQueryOperations> nameProperty() {
+  QueryBuilder<OnGoingTask, Subject?, QQueryOperations> subjectProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'name');
+      return query.addPropertyName(r'subject');
+    });
+  }
+
+  QueryBuilder<OnGoingTask, String, QQueryOperations> titleProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'title');
     });
   }
 }

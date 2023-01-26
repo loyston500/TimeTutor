@@ -126,4 +126,15 @@ class Utils {
       throw Exception("failed");
     }
   }
+
+  static Iterable<Period> setOfAllPeriodsOfTimetable(Timetable timetable) {
+    var all = timetable.sunday +
+        timetable.monday +
+        timetable.tuesday +
+        timetable.wednesday +
+        timetable.thursday +
+        timetable.friday +
+        timetable.saturday;
+    return all.toSet();
+  }
 }

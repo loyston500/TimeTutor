@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:timetutor/dialogs/task_editor.dart';
 import 'package:timetutor/impls/impls.dart';
 import 'package:timetutor/themes/themes.dart';
 import 'package:draggable_home/draggable_home.dart';
@@ -321,121 +322,138 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       fullyStretchable: true,
-      expandedBody: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const SizedBox(
-              height: 30,
-            ),
-            Column(
-              children: [
-                DayProperties(DateTime.sunday, "Sunday"),
-                DayProperties(DateTime.monday, "Monday"),
-                DayProperties(DateTime.tuesday, "Tuesday"),
-                DayProperties(DateTime.wednesday, "Wednesday"),
-                DayProperties(DateTime.thursday, "Thursday"),
-                DayProperties(DateTime.friday, "Friday"),
-                DayProperties(DateTime.saturday, "Saturday"),
-              ]
-                  .where((dayProperty) => userTimetable
-                      .returnDayPeriods(dayProperty.day)
-                      .isNotEmpty)
-                  .map((dayProperty) {
-                final periods = userTimetable.returnDayPeriods(dayProperty.day);
-                return Column(
-                  children: [
-                    Text(
-                      dayProperty.name,
-                      style: TextStyle(
-                          color: dayProperty.day == now.weekday
-                              ? Theme.of(context).toggleButtonsTheme.color!
-                              : null),
+      expandedBody: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              const SizedBox(
+                height: 50,
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  DayProperties(DateTime.sunday, "Sunday"),
+                  DayProperties(DateTime.monday, "Monday"),
+                  DayProperties(DateTime.tuesday, "Tuesday"),
+                  DayProperties(DateTime.wednesday, "Wednesday"),
+                  DayProperties(DateTime.thursday, "Thursday"),
+                  DayProperties(DateTime.friday, "Friday"),
+                  DayProperties(DateTime.saturday, "Saturday"),
+                ]
+                    .where((dayProperty) => userTimetable
+                        .returnDayPeriods(dayProperty.day)
+                        .isNotEmpty)
+                    .map((dayProperty) {
+                  final periods =
+                      userTimetable.returnDayPeriods(dayProperty.day);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(left: 35),
+                          child: CarouselSlider(
+                            options: CarouselOptions(
+                              padEnds: false,
+                              height: 90,
+                              aspectRatio: 1,
+                              viewportFraction: 0.3,
+                              initialPage: dayProperty.day == now.weekday &&
+                                      currentPeriod != null
+                                  ? currentPeriodPos
+                                  : 0,
+                              enableInfiniteScroll:
+                                  currentSettings.timetableEnableInfiniteScroll,
+                              autoPlay: currentSettings
+                                  .timetableAutoPlayPeriodsAnimation,
+                              autoPlayInterval: Duration(
+                                  seconds: currentSettings
+                                      .timetableAutoPlayInterval),
+                              autoPlayAnimationDuration:
+                                  const Duration(milliseconds: 800),
+                              autoPlayCurve: Curves.fastOutSlowIn,
+                              enlargeCenterPage: true,
+                              enlargeFactor: 0,
+                              scrollDirection: Axis.horizontal,
+                            ),
+                            items: List.generate(periods.length, (index) {
+                              return Builder(
+                                builder: (BuildContext context) {
+                                  return SizedBox(
+                                    width: 100,
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          "${index + 1}/${periods.length}",
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            periods[index].subject.name,
+                                            style: (dayProperty.day ==
+                                                        now.weekday &&
+                                                    currentPeriod != null &&
+                                                    index == currentPeriodPos)
+                                                ? Theme.of(context)
+                                                    .textTheme
+                                                    .headline5!
+                                                    .copyWith(
+                                                        color: Theme.of(context)
+                                                            .toggleButtonsTheme
+                                                            .color,
+                                                        shadows: [
+                                                        Shadow(
+                                                          color: Theme.of(
+                                                                  context)
+                                                              .toggleButtonsTheme
+                                                              .color!,
+                                                          blurRadius: 10,
+                                                        )
+                                                      ])
+                                                : Theme.of(context)
+                                                    .textTheme
+                                                    .headline5!,
+                                          ),
+                                        ),
+                                        Text(
+                                          periods[index].timing.toString(),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            }),
+                          ),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.only(left: 10),
+                          child: Text(dayProperty.name.substring(0, 3),
+                              style: TextStyle(
+                                  color: dayProperty.day == now.weekday
+                                      ? Theme.of(context)
+                                          .toggleButtonsTheme
+                                          .color!
+                                      : null)),
+                        ),
+                      ],
                     ),
-                    CarouselSlider(
-                      options: CarouselOptions(
-                        height: 90,
-                        aspectRatio: 1,
-                        viewportFraction: 0.35,
-                        initialPage: dayProperty.day == now.weekday &&
-                                currentPeriod != null
-                            ? currentPeriodPos
-                            : 0,
-                        enableInfiniteScroll:
-                            currentSettings.timetableEnableInfiniteScroll,
-                        autoPlay:
-                            currentSettings.timetableAutoPlayPeriodsAnimation,
-                        autoPlayInterval: Duration(
-                            seconds: currentSettings.timetableAutoPlayInterval),
-                        autoPlayAnimationDuration:
-                            const Duration(milliseconds: 800),
-                        autoPlayCurve: Curves.fastOutSlowIn,
-                        enlargeCenterPage: true,
-                        enlargeFactor: 0,
-                        scrollDirection: Axis.horizontal,
-                      ),
-                      items: List.generate(periods.length, (index) {
-                        return Builder(
-                          builder: (BuildContext context) {
-                            return SizedBox(
-                              width: 100,
-                              child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        "${index + 1}/${periods.length}",
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      Text(
-                                        periods[index].subject.name,
-                                        style: (dayProperty.day ==
-                                                    now.weekday &&
-                                                currentPeriod != null &&
-                                                index == currentPeriodPos)
-                                            ? Theme.of(context)
-                                                .textTheme
-                                                .headline5!
-                                                .copyWith(
-                                                    color: Theme.of(context)
-                                                        .toggleButtonsTheme
-                                                        .color,
-                                                    shadows: [
-                                                    Shadow(
-                                                      color: Theme.of(context)
-                                                          .toggleButtonsTheme
-                                                          .color!,
-                                                      blurRadius: 10,
-                                                    )
-                                                  ])
-                                            : Theme.of(context)
-                                                .textTheme
-                                                .headline5!,
-                                      ),
-                                      Text(
-                                        periods[index].timing.toString(),
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ],
-                                  )),
-                            );
-                          },
-                        );
-                      }),
-                    )
-                  ],
-                );
-              }).toList(),
-            ),
-            const SizedBox(
-              height: 10,
-            )
-          ],
+                  );
+                }).toList(),
+              ),
+              const SizedBox(
+                height: 10,
+              )
+            ],
+          ),
         ),
       ),
       body: [
@@ -455,8 +473,8 @@ class _HomePageState extends State<HomePage> {
                           style: Theme.of(context).textTheme.headlineSmall!),
                     ),
                     Container(
-                      padding: const EdgeInsets.all(20),
-                      height: 280,
+                      padding: const EdgeInsets.all(10),
+                      height: 300,
                       child: SingleChildScrollView(
                         child: Column(
                           children: [
@@ -471,10 +489,55 @@ class _HomePageState extends State<HomePage> {
                                         borderRadius: BorderRadius.circular(10),
                                         splashColor:
                                             Theme.of(context).primaryColor,
-                                        onTap: () {
-                                          // TODO: implement task click
+                                        onTapDown: (details) async {
+                                          await showMenu<Function>(
+                                              context: context,
+                                              position: RelativeRect.fromLTRB(
+                                                details.globalPosition.dx,
+                                                details.globalPosition.dy,
+                                                details.globalPosition.dx,
+                                                details.globalPosition.dy,
+                                              ),
+                                              items: [
+                                                PopupMenuItem<Function>(
+                                                  child: Row(
+                                                    children: const [
+                                                      Icon(Icons.edit),
+                                                      Text("Edit"),
+                                                    ],
+                                                  ),
+                                                  value: () async {
+                                                    await taskEditorDialog(
+                                                        context,
+                                                        task,
+                                                        Utils.setOfAllPeriodsOfTimetable(
+                                                                userTimetable)
+                                                            .map((e) =>
+                                                                e.subject)
+                                                            .toSet());
+                                                    await isar.writeTxn(
+                                                        () async => await isar
+                                                            .onGoingTasks
+                                                            .put(task));
+                                                  },
+                                                ),
+                                                PopupMenuItem<Function>(
+                                                  child: Row(
+                                                    children: const [
+                                                      Icon(Icons.delete),
+                                                      Text("Delete"),
+                                                    ],
+                                                  ),
+                                                  value: () async =>
+                                                      await isar.writeTxn(
+                                                          () async => await isar
+                                                              .onGoingTasks
+                                                              .delete(task.id)),
+                                                ),
+                                              ]).then((fn) async =>
+                                              fn != null ? await fn() : null);
+                                          setState(() {});
                                         },
-                                        onLongPress: () {},
                                         child: Container(
                                           decoration: BoxDecoration(
                                             backgroundBlendMode:
@@ -491,11 +554,11 @@ class _HomePageState extends State<HomePage> {
                                                 MainAxisAlignment.spaceBetween,
                                             children: [
                                               Container(
-                                                width: 250,
+                                                width: 200,
                                                 padding: const EdgeInsets.only(
                                                     left: 20),
                                                 child: Text(
-                                                  task.name,
+                                                  task.title,
                                                   overflow: TextOverflow.fade,
                                                 ),
                                               ),
@@ -506,6 +569,23 @@ class _HomePageState extends State<HomePage> {
                                                     Alignment.centerRight,
                                                 child: Row(
                                                   children: [
+                                                    Container(
+                                                      //width: 50,
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              right: 20),
+                                                      child: Text(
+                                                        task.subject != null
+                                                            ? task.subject!.name
+                                                            : Jiffy(task.date.add(
+                                                                    const Duration(
+                                                                        days:
+                                                                            1)))
+                                                                .fromNow(),
+                                                        overflow:
+                                                            TextOverflow.fade,
+                                                      ),
+                                                    ),
                                                     CircleAvatar(
                                                       backgroundColor: Color(task
                                                               .color ??
@@ -526,7 +606,20 @@ class _HomePageState extends State<HomePage> {
                                 ],
                               ),
                             TextButton(
-                                onPressed: () {}, child: const Text("Add"))
+                                onPressed: () async {
+                                  var task = OnGoingTask(
+                                      title: "Finish the notes", date: now);
+                                  await taskEditorDialog(
+                                      context,
+                                      task,
+                                      Utils.setOfAllPeriodsOfTimetable(
+                                              userTimetable)
+                                          .map((e) => e.subject)
+                                          .toSet());
+                                  await isar.writeTxn(() async =>
+                                      await isar.onGoingTasks.put(task));
+                                },
+                                child: const Text("Add"))
                           ],
                         ),
                       ),
