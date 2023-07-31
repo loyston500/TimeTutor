@@ -1,6 +1,7 @@
-class DayProperties {
+class DayProperty {
   int day;
   String name;
+  String shortName;
 
-  DayProperties(this.day, this.name);
+  DayProperty(this.day, this.name, this.shortName);
 }

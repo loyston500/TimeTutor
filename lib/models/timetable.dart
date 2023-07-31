@@ -94,43 +94,69 @@ class UserTimetable extends Timetable {
       final sunday = periodsFromTimingStringsAndSubjectStrings(
           timings,
           json["table"]["sunday"] != null
-              ? shlex.split(json["table"]["sunday"] as String)
+              ? json["table"]["sunday"] is List<dynamic>
+                  ? json["table"]["sunday"] as List<String>
+                  : shlex.split(json["table"]["sunday"] as String)
               : []);
 
       final monday = periodsFromTimingStringsAndSubjectStrings(
           timings,
           json["table"]["monday"] != null
-              ? shlex.split(json["table"]["monday"] as String)
+              ? json["table"]["monday"] is List<dynamic>
+                  ? (json["table"]["monday"] as List)
+                      .map((item) => item as String)
+                      .toList()
+                  : shlex.split(json["table"]["monday"] as String)
               : []);
 
       final tuesday = periodsFromTimingStringsAndSubjectStrings(
           timings,
           json["table"]["tuesday"] != null
-              ? shlex.split(json["table"]["tuesday"] as String)
+              ? json["table"]["tuesday"] is List<dynamic>
+                  ? (json["table"]["tuesday"] as List)
+                      .map((item) => item as String)
+                      .toList()
+                  : shlex.split(json["table"]["tuesday"] as String)
               : []);
 
       final wednesday = periodsFromTimingStringsAndSubjectStrings(
           timings,
           json["table"]["wednesday"] != null
-              ? shlex.split(json["table"]["wednesday"] as String)
+              ? json["table"]["wednesday"] is List<dynamic>
+                  ? (json["table"]["wednesday"] as List)
+                      .map((item) => item as String)
+                      .toList()
+                  : shlex.split(json["table"]["wednesday"] as String)
               : []);
 
       final thursday = periodsFromTimingStringsAndSubjectStrings(
           timings,
           json["table"]["thursday"] != null
-              ? shlex.split(json["table"]["thursday"] as String)
+              ? json["table"]["thursday"] is List<dynamic>
+                  ? (json["table"]["thursday"] as List)
+                      .map((item) => item as String)
+                      .toList()
+                  : shlex.split(json["table"]["thursday"] as String)
               : []);
 
       final friday = periodsFromTimingStringsAndSubjectStrings(
           timings,
           json["table"]["friday"] != null
-              ? shlex.split(json["table"]["friday"] as String)
+              ? json["table"]["friday"] is List<dynamic>
+                  ? (json["table"]["friday"] as List)
+                      .map((item) => item as String)
+                      .toList()
+                  : shlex.split(json["table"]["friday"] as String)
               : []);
 
       final saturday = periodsFromTimingStringsAndSubjectStrings(
           timings,
           json["table"]["saturday"] != null
-              ? shlex.split(json["table"]["saturday"] as String)
+              ? json["table"]["saturday"] is List<dynamic>
+                  ? (json["table"]["saturday"] as List)
+                      .map((item) => item as String)
+                      .toList()
+                  : shlex.split(json["table"]["saturday"] as String)
               : []);
 
       final name = json["name"] as String?;

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:timetutor/dialogs/task_editor.dart';
 import 'package:timetutor/impls/impls.dart';
+import 'package:timetutor/main/expanded_body.dart';
 import 'package:timetutor/themes/themes.dart';
 import 'package:draggable_home/draggable_home.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
@@ -175,6 +176,8 @@ class _HomePageState extends State<HomePage> {
     DateTime now = DateTime.now();
     TimeOfDay tod = TimeOfDay(hour: now.hour, minute: now.minute);
 
+    DayProperty currentDayProperty = Utils.dayProperties[now.weekday]!;
+
     List<Period> periods = userTimetable.returnDayPeriods(now.weekday);
     Utils.sortPeriods(periods);
 
@@ -322,48 +325,41 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       fullyStretchable: true,
-      expandedBody: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const SizedBox(
-                height: 50,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  DayProperties(DateTime.sunday, "Sunday"),
-                  DayProperties(DateTime.monday, "Monday"),
-                  DayProperties(DateTime.tuesday, "Tuesday"),
-                  DayProperties(DateTime.wednesday, "Wednesday"),
-                  DayProperties(DateTime.thursday, "Thursday"),
-                  DayProperties(DateTime.friday, "Friday"),
-                  DayProperties(DateTime.saturday, "Saturday"),
-                ]
-                    .where((dayProperty) => userTimetable
-                        .returnDayPeriods(dayProperty.day)
-                        .isNotEmpty)
-                    .map((dayProperty) {
-                  final periods =
-                      userTimetable.returnDayPeriods(dayProperty.day);
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    child: Stack(
-                      alignment: Alignment.centerLeft,
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(left: 35),
-                          child: CarouselSlider(
+      // code is in another file
+      expandedBody: expandedBody(
+          userTimetable: userTimetable,
+          now: now,
+          context: context,
+          currentPeriodPos: currentPeriodPos,
+          currentPeriod: currentPeriod,
+          currentSettings: currentSettings),
+      body: [
+        Column(
+          children: [
+            if (periods.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Container(
+                  decoration:
+                      BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                  child: Column(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(left: 20),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                            'Today\'s periods (${currentDayProperty.shortName})',
+                            style: Theme.of(context).textTheme.headlineSmall!),
+                      ),
+                      Column(
+                        children: [
+                          CarouselSlider(
                             options: CarouselOptions(
-                              padEnds: false,
                               height: 90,
                               aspectRatio: 1,
-                              viewportFraction: 0.3,
-                              initialPage: dayProperty.day == now.weekday &&
-                                      currentPeriod != null
-                                  ? currentPeriodPos
-                                  : 0,
+                              viewportFraction: 0.35,
+                              initialPage:
+                                  currentPeriod != null ? currentPeriodPos : 0,
                               enableInfiniteScroll:
                                   currentSettings.timetableEnableInfiniteScroll,
                               autoPlay: currentSettings
@@ -383,82 +379,60 @@ class _HomePageState extends State<HomePage> {
                                 builder: (BuildContext context) {
                                   return SizedBox(
                                     width: 100,
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          "${index + 1}/${periods.length}",
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            periods[index].subject.name,
-                                            style: (dayProperty.day ==
-                                                        now.weekday &&
-                                                    currentPeriod != null &&
-                                                    index == currentPeriodPos)
-                                                ? Theme.of(context)
-                                                    .textTheme
-                                                    .headline5!
-                                                    .copyWith(
-                                                        color: Theme.of(context)
-                                                            .toggleButtonsTheme
-                                                            .color,
-                                                        shadows: [
-                                                        Shadow(
+                                    child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              "${index + 1}/${periods.length}",
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            Text(
+                                              periods[index].subject.name,
+                                              style: (currentPeriod != null &&
+                                                      index == currentPeriodPos)
+                                                  ? Theme.of(context)
+                                                      .textTheme
+                                                      .headline5!
+                                                      .copyWith(
                                                           color: Theme.of(
                                                                   context)
                                                               .toggleButtonsTheme
-                                                              .color!,
-                                                          blurRadius: 10,
-                                                        )
-                                                      ])
-                                                : Theme.of(context)
-                                                    .textTheme
-                                                    .headline5!,
-                                          ),
-                                        ),
-                                        Text(
-                                          periods[index].timing.toString(),
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                                              .color,
+                                                          shadows: [
+                                                          Shadow(
+                                                            color: Theme.of(
+                                                                    context)
+                                                                .toggleButtonsTheme
+                                                                .color!,
+                                                            blurRadius: 10,
+                                                          )
+                                                        ])
+                                                  : Theme.of(context)
+                                                      .textTheme
+                                                      .headline5!,
+                                            ),
+                                            Text(
+                                              periods[index].timing.toString(),
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ],
+                                        )),
                                   );
                                 },
                               );
                             }),
-                          ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(left: 10),
-                          child: Text(dayProperty.name.substring(0, 3),
-                              style: TextStyle(
-                                  color: dayProperty.day == now.weekday
-                                      ? Theme.of(context)
-                                          .toggleButtonsTheme
-                                          .color!
-                                      : null)),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                          )
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(
-                height: 10,
-              )
-            ],
-          ),
-        ),
-      ),
-      body: [
-        Column(
-          children: [
             Padding(
               padding: const EdgeInsets.all(10),
               child: Container(
