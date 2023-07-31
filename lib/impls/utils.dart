@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:timetutor/impls/day_properties.dart';
 import 'package:timetutor/models/exam.dart';
 import 'package:uri_to_file/uri_to_file.dart';
 import 'dart:io';
@@ -37,6 +38,16 @@ class Utils {
       "^(((?<h1>$hoursPattern)(:(?<m1>$minutesPattern))?(?<a1>[AaPp][Mm])?)-((?<h2>$hoursPattern)(:(?<m2>$minutesPattern))?(?<a2>[AaPp][Mm])?))";
 
   static final timePatternReg = RegExp(timePattern);
+
+  static final dayProperties = {
+    DateTime.sunday: DayProperty(DateTime.sunday, "Sunday", "Sun"),
+    DateTime.monday: DayProperty(DateTime.monday, "Monday", "Mon"),
+    DateTime.tuesday: DayProperty(DateTime.tuesday, "Tuesday", "Tue"),
+    DateTime.wednesday: DayProperty(DateTime.wednesday, "Wednesday", "Wed"),
+    DateTime.thursday: DayProperty(DateTime.thursday, "Thursday", "Thu"),
+    DateTime.friday: DayProperty(DateTime.friday, "Friday", "Fri"),
+    DateTime.saturday: DayProperty(DateTime.saturday, "Saturday", "Sat"),
+  };
 
   static double timeOfDayAsDouble(TimeOfDay tod) {
     return tod.hour + tod.minute / 60.0;
