@@ -191,7 +191,7 @@ class UserTimetable extends Timetable {
       } else if (sub == "~prev") {
         // combines previous period to the current
         if (i == 0) {
-          throw Exception("$sub cannot be the first preiod");
+          throw Exception("$sub cannot be the first period");
         }
         var prev = periods.removeLast();
         String prevTiming = prev.timing.toString();

@@ -1,5 +1,6 @@
 import 'package:timetutor/models/models.dart';
 import 'package:isar/isar.dart';
+import 'package:path_provider/path_provider.dart';
 
 late Isar isar;
 late CurrentSettings currentSettings;
@@ -8,8 +9,10 @@ late UserTimetable userTimetable;
 
 class Db {
   static Future<void> init() async {
+    final dir = await getApplicationDocumentsDirectory();
     isar = await Isar.open(
-        [CurrentSettingsSchema, OnGoingTaskSchema, UserTimetableSchema]);
+        [CurrentSettingsSchema, OnGoingTaskSchema, UserTimetableSchema],
+        directory: dir.path);
 
     await Db.initCurrentSettings();
     await Db.initOnGoingTasks();

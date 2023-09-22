@@ -14,6 +14,9 @@ abstract class Settings {
   int themeColor = Colors.teal.value;
   String customThemeId = "";
 
+  String chatgptApiToken = "";
+  String chatgptString = "";
+
   Settings();
 }
 

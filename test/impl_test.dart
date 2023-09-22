@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:timetutor/models/models.dart';
 import 'package:timetutor/impls/impls.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,5 +55,11 @@ void main() {
     expect(func("9-10PM"), "9:00 PM-10:00 PM");
     expect(func("9PM-10PM"), "9:00 PM-10:00 PM");
     expect(func("9:00-10PM"), "9:00 PM-10:00 PM");
+  });
+
+  test("DateFormat test", () {
+    var date = DateFormat("hh:mm a").parse("1:30 PM-2:20 PM");
+    expect(date, date);
+    expect(1, 2);
   });
 }

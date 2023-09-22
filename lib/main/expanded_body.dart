@@ -10,7 +10,13 @@ Widget expandedBody({
   required int currentPeriodPos,
   required Period? currentPeriod,
   required Settings currentSettings,
+  required Iterable<Subject> yesterdaySubjects,
+  required Iterable<Subject> subjects,
 }) {
+  var addSubjects =
+      Utils.getSubjectDifference(yesterdaySubjects, subjects).toList();
+  var removeSubjects =
+      Utils.getSubjectDifference(subjects, yesterdaySubjects).toList();
   return SingleChildScrollView(
     scrollDirection: Axis.vertical,
     child: Column(

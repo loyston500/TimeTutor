@@ -28,6 +28,7 @@ class Timing {
   }
 
   factory Timing.fromString(String string) {
+    string = string.replaceAll('\u202f', " ");
     final now = DateTime.now();
     final from = DateFormat("hh:mm a").parse(string.split("-")[0]);
     final to = DateFormat("hh:mm a").parse(string.split("-")[1]);

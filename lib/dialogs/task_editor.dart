@@ -74,14 +74,15 @@ Future<bool> taskEditorDialog(
                       Column(
                         children: [
                           Text(
-                            Jiffy(task.date).yMMMMEEEEd,
+                            Jiffy.parseFromDateTime(task.date).yMMMMEEEEd,
                             style: TextStyle(
                                 decoration: task.subject != null
                                     ? TextDecoration.lineThrough
                                     : null),
                           ),
                           Text(
-                            Jiffy(task.date.add(const Duration(days: 1)))
+                            Jiffy.parseFromDateTime(
+                                    task.date.add(const Duration(days: 1)))
                                 .fromNow(),
                             style: TextStyle(
                                 decoration: task.subject != null

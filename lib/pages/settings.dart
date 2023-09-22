@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:settings_ui/settings_ui.dart';
+import 'package:timetutor/chatgpt.dart';
+import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:timetutor/dialogs/color_picker.dart';
 import 'package:timetutor/db.dart';
 import 'package:timetutor/models/settings.dart';
@@ -18,12 +20,12 @@ class _SettingsPageState extends State<SettingsPage> {
       appBar: AppBar(title: const Text("Settings")),
       body: SettingsList(
         darkTheme: SettingsThemeData(
-          settingsTileTextColor: Theme.of(context).textTheme.bodyText2!.color,
+          settingsTileTextColor: Theme.of(context).textTheme.bodyMedium!.color,
           titleTextColor: Theme.of(context).iconTheme.color,
           settingsListBackground: Theme.of(context).backgroundColor,
         ),
         lightTheme: SettingsThemeData(
-          settingsTileTextColor: Theme.of(context).textTheme.bodyText2!.color,
+          settingsTileTextColor: Theme.of(context).textTheme.bodyMedium!.color,
           titleTextColor: Theme.of(context).iconTheme.color,
           settingsListBackground: Theme.of(context).backgroundColor,
         ),
@@ -135,6 +137,64 @@ class _SettingsPageState extends State<SettingsPage> {
                 isar.writeTxn(() => isar.currentSettings.put(currentSettings));
               }),
               title: const Text("Enable infinite scroll"),
+            )
+          ]),
+          SettingsSection(title: const Text('AI'), tiles: [
+            SettingsTile.navigation(
+              title: const Text("Set chatGPT token"),
+              onPressed: (context) async {
+                await showDialog(
+                    context: context,
+                    builder: (context) {
+                      return StatefulBuilder(builder: (context, setState) {
+                        return AlertDialog(
+                          content: SingleChildScrollView(
+                            child: Column(children: [
+                              TextFormField(
+                                initialValue: currentSettings.chatgptApiToken,
+                                validator: (value) {
+                                  currentSettings.chatgptApiToken = value!;
+                                  return null;
+                                },
+                                autovalidateMode:
+                                    AutovalidateMode.onUserInteraction,
+                                decoration: const InputDecoration(
+                                  hintText: "Token",
+                                  labelText: "Token",
+                                ),
+                              ),
+                            ]),
+                          ),
+                          actions: [
+                            TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  try {
+                                    chatgpt = OpenAI.instance.build(
+                                        token: currentSettings.chatgptApiToken,
+                                        baseOption: HttpSetup(
+                                            receiveTimeout:
+                                                const Duration(seconds: 5)),
+                                        enableLog: true);
+                                  } on MissingTokenException catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                "Error: ${e.toString()}")));
+                                    return;
+                                  }
+
+                                  isar.writeTxn(() => isar.currentSettings
+                                      .put(currentSettings));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("Done")));
+                                },
+                                child: const Text("Done"))
+                          ],
+                        );
+                      });
+                    });
+              },
             )
           ]),
         ],

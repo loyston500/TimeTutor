@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:timetutor/dialogs/task_editor.dart';
 import 'package:timetutor/impls/impls.dart';
 import 'package:timetutor/main/expanded_body.dart';
+import 'package:timetutor/main/subject_info.dart';
 import 'package:timetutor/themes/themes.dart';
 import 'package:draggable_home/draggable_home.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
@@ -15,8 +16,11 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:timetutor/db.dart';
 import 'package:timetutor/models/models.dart';
 import 'package:yaml/yaml.dart';
+import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
+import 'chatgpt.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await Db.init();
   runApp(const App());
 }
@@ -93,6 +97,8 @@ class _HomePageState extends State<HomePage> {
   late StreamSubscription _intentDataStreamSubscription;
   late Timer timer;
 
+  String? tipString;
+
   @override
   void initState() {
     super.initState();
@@ -130,6 +136,12 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void setTip() {
+    //final request = ChatCompleteText(messages: [
+    //  Map.of({"role": "user", "content": 'Hello!'})
+    //], maxToken: 200, model: Gpt4ChatModel());
+  }
+
   @override
   void dispose() {
     _intentDataStreamSubscription.cancel();
@@ -143,17 +155,18 @@ class _HomePageState extends State<HomePage> {
       try {
         yaml = loadYaml(string);
       } catch (e) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Bad data: ${e.toString()}")));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Bad data e1: ${e.toString()}")));
         return;
       }
 
       late ParsedYamlData data;
+
       try {
         data = Utils.parseYamlData(jsonDecode(jsonEncode(yaml)));
       } on Exception catch (e) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Bad data: ${e.toString()}")));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Bad data e2: ${e.toString()}")));
         return;
       }
 
@@ -174,12 +187,20 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     DateTime now = DateTime.now();
+    DateTime yesterday = now.subtract(const Duration(days: 1));
+
     TimeOfDay tod = TimeOfDay(hour: now.hour, minute: now.minute);
 
     DayProperty currentDayProperty = Utils.dayProperties[now.weekday]!;
 
     List<Period> periods = userTimetable.returnDayPeriods(now.weekday);
     Utils.sortPeriods(periods);
+
+    List<Period> yesterdayPeriods =
+        userTimetable.returnDayPeriods(yesterday.weekday);
+    Utils.sortPeriods(yesterdayPeriods);
+
+    // period calculation
 
     Period? currentPeriod;
     Period? nextPeriod;
@@ -214,6 +235,10 @@ class _HomePageState extends State<HomePage> {
         break;
       }
     }
+
+    // debugPrint(Utils.timetableToStirng(userTimetable));
+
+    // debugPrint(Utils.tasksToString(onGoingTasks));
 
     return DraggableHome(
       appBarColor: Theme.of(context).backgroundColor,
@@ -307,7 +332,7 @@ class _HomePageState extends State<HomePage> {
                 else if (nextPeriod != null)
                   Text(
                     "${nextPeriod.subject.name}"
-                    " ${Jiffy(DateTime(now.year, now.month, now.day, nextPeriod.timing.from.hour, nextPeriod.timing.from.minute)).from(now)}",
+                    " ${Jiffy.parseFromDateTime(DateTime(now.year, now.month, now.day, nextPeriod.timing.from.hour, nextPeriod.timing.from.minute)).fromNow()}",
                   )
                 else
                   const Text(
@@ -316,7 +341,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 10),
                 if (currentSettings.displayPrevPeriod && prevPeriod != null)
                   Text(
-                    "${prevPeriod.subject.name} was ${Jiffy(DateTime(now.year, now.month, now.day, prevPeriod.timing.from.hour, prevPeriod.timing.from.minute)).from(now)}",
+                    "${prevPeriod.subject.name} was ${Jiffy.parseFromDateTime(DateTime(now.year, now.month, now.day, prevPeriod.timing.from.hour, prevPeriod.timing.from.minute)).fromNow()}",
                     style: const TextStyle(fontSize: 12),
                   ),
               ],
@@ -332,7 +357,9 @@ class _HomePageState extends State<HomePage> {
           context: context,
           currentPeriodPos: currentPeriodPos,
           currentPeriod: currentPeriod,
-          currentSettings: currentSettings),
+          currentSettings: currentSettings,
+          subjects: Utils.getSubjectsFromPeriods(periods),
+          yesterdaySubjects: Utils.getSubjectsFromPeriods(yesterdayPeriods)),
       body: [
         Column(
           children: [
@@ -433,6 +460,16 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
+
+            /*if (periods.isNotEmpty && yesterdayPeriods.isNotEmpty)
+              subjectInfo(
+                  currentSettings: currentSettings,
+                  context: context,
+                  subjects: Utils.getSubjectsFromPeriods(periods),
+                  yesterdaySubjects:
+                      Utils.getSubjectsFromPeriods(yesterdayPeriods)),*/
+            if (chatgpt != null)
+              Text("Currently there isn't any tip available"),
             Padding(
               padding: const EdgeInsets.all(10),
               child: Container(
@@ -551,8 +588,9 @@ class _HomePageState extends State<HomePage> {
                                                       child: Text(
                                                         task.subject != null
                                                             ? task.subject!.name
-                                                            : Jiffy(task.date.add(
-                                                                    const Duration(
+                                                            : Jiffy.parseFromDateTime(task
+                                                                    .date
+                                                                    .add(const Duration(
                                                                         days:
                                                                             1)))
                                                                 .fromNow(),

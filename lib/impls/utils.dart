@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:timetutor/impls/day_properties.dart';
@@ -5,6 +7,7 @@ import 'package:timetutor/models/exam.dart';
 import 'package:uri_to_file/uri_to_file.dart';
 import 'dart:io';
 import 'package:timetutor/models/models.dart';
+import 'package:intl/intl.dart';
 
 enum YamlDataType {
   update,
@@ -147,5 +150,50 @@ class Utils {
         timetable.friday +
         timetable.saturday;
     return all.toSet();
+  }
+
+  static Iterable<Subject> getSubjectDifference(
+      Iterable<Subject> x, Iterable<Subject> y) {
+    var x_ = x.toSet();
+    var y_ = y.toSet();
+    return y_.difference(x_.intersection(y_));
+  }
+
+  static Iterable<Subject> getSubjectsFromPeriods(Iterable<Period> periods) {
+    return periods.map((e) => e.subject);
+  }
+
+  static String timetableToStirng(Timetable timetable) {
+    var dayStrings = [];
+    for (int day = 1; day <= 7; day++) {
+      var periods = timetable.returnDayPeriods(day);
+      if (periods.isEmpty) continue;
+      var periodStrings = [];
+      for (var period in periods) {
+        periodStrings.add(
+            '${period.subject.name} (${DateFormat("hh:mm a").format(period.timing.from)}-${DateFormat("hh:mm a").format(period.timing.to)})');
+      }
+
+      dayStrings
+          .add("${dayProperties[day]!.name}: ${periodStrings.join(", ")}");
+    }
+    return dayStrings.join("\n");
+  }
+
+  static String tasksToString(
+    List<Task> tasks,
+  ) {
+    var taskString = [];
+    for (var task in tasks) {
+      String details;
+      if (task.subject == null) {
+        details =
+            ': to complete before ${DateFormat("dd-MM-yyyy").format(task.date)}';
+      } else {
+        details = ': to complete before next ${task.subject!.name} period';
+      }
+      taskString.add(task.title + details);
+    }
+    return taskString.join('\n');
   }
 }
